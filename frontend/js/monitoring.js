@@ -12,7 +12,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   let current = null;
   let interval = 5;
   let timer = null;
-  let vibChart = null, tempChart = null;
+  let voltageChart = null, currentChart = null;
 
   try {
     const [list, settings] = await Promise.all([api.listTransformers(), api.getSettings().catch(() => ({}))]);
@@ -43,7 +43,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     refresh(true); 
   });
   
-  feed.addEventListener("change", () => toast(feed.checked ? "Simulated sensor feed started." : "Simulated sensor feed stopped.", "info"));
+  feed.addEventListener("change", () => toast(feed.checked ? "Simulated multimeter feed started." : "Simulated multimeter feed stopped.", "info"));
   form.addEventListener("submit", onManualReading);
 
   await refresh(true);
@@ -53,9 +53,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   async function tick() {
     if (document.hidden) return;
     if (feed.checked && current && current.status === "ONLINE") {
-      const temp = 55 + (Math.random() * 6 - 3);
-      const vib = current.baseline_vibration + (Math.random() * 0.2 - 0.1);
-      try { await api.addReading(current.id, { temperature: +temp.toFixed(2), vibration: +vib.toFixed(3) }); } catch (_) {}
+      const voltage = 230 + (Math.random() * 6 - 3);
+      const currentVal = (current.baseline_current || 45) + (Math.random() * 4 - 2);
+      try { await api.addReading(current.id, { voltage: +voltage.toFixed(1), current: +currentVal.toFixed(2) }); } catch (_) {}
     }
     refresh(false);
   }
@@ -79,10 +79,10 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderStats(t, readings) {
     const last = readings[readings.length - 1];
-    document.getElementById("mTemp").textContent = last ? fmtNum(last.temperature, 1) + " °C" : "—";
-    document.getElementById("mTempSub").textContent = `Limit ${fmtNum(t.max_temp, 0)} °C`;
-    document.getElementById("mVib").textContent = last ? fmtNum(last.vibration, 3) : "—";
-    document.getElementById("mVibSub").textContent = `Warn ${fmtNum(t.warn_threshold, 1)} · Critical ${fmtNum(t.crit_threshold, 1)}`;
+    document.getElementById("mVoltage").textContent = last ? fmtNum(last.voltage, 1) + " V" : "—";
+    document.getElementById("mVoltageSub").textContent = `Nominal ${fmtNum(t.nominal_voltage || 230, 0)} V`;
+    document.getElementById("mCurrent").textContent = last ? fmtNum(last.current, 2) + " A" : "—";
+    document.getElementById("mCurrentSub").textContent = `Warn ${fmtNum(t.warn_threshold, 1)} · Critical ${fmtNum(t.crit_threshold, 1)}`;
     document.getElementById("mHealth").innerHTML = healthPill(t.health);
     document.getElementById("mStatus").innerHTML = connectivityPill(t.status);
     document.getElementById("mSeen").textContent = timeAgo(t.last_seen);
@@ -93,18 +93,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     const labels = readings.map(r => new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
     const flat = (v) => readings.map(() => v);
 
-    const vibData = [
-      { label: "Vibration", data: readings.map(r => r.vibration), borderColor: "#0054A6", backgroundColor: "rgba(0,84,166,.08)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
-      { label: "Warning", data: flat(t.warn_threshold), borderColor: "#D97706", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
-      { label: "Critical", data: flat(t.crit_threshold), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
+    const voltageData = [
+      { label: "Voltage (V)", data: readings.map(r => r.voltage), borderColor: "#0054A6", backgroundColor: "rgba(0,84,166,.08)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
+      { label: "Warning", data: flat(t.warn_threshold || 250), borderColor: "#D97706", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
+      { label: "Critical", data: flat(t.crit_threshold || 265), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
     ];
-    const tempData = [
-      { label: "Temperature (°C)", data: readings.map(r => r.temperature), borderColor: "#D97706", backgroundColor: "rgba(217,119,6,.10)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
-      { label: "Limit", data: flat(t.max_temp), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
+    const currentData = [
+      { label: "Current (A)", data: readings.map(r => r.current), borderColor: "#D97706", backgroundColor: "rgba(217,119,6,.10)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
+      { label: "Limit", data: flat(t.max_current || 100), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
     ];
 
-    if (full && vibChart) { vibChart.destroy(); vibChart = null; }
-    if (full && tempChart) { tempChart.destroy(); tempChart = null; }
+    if (full && voltageChart) { voltageChart.destroy(); voltageChart = null; }
+    if (full && currentChart) { currentChart.destroy(); currentChart = null; }
 
     const opts = (begin) => ({
       responsive: true, maintainAspectRatio: false, animation: false,
@@ -113,11 +113,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       scales: { y: { beginAtZero: begin }, x: { ticks: { maxTicksLimit: 8 } } },
     });
 
-    if (!vibChart) vibChart = new Chart(document.getElementById("vibChart"), { type: "line", data: { labels, datasets: vibData }, options: opts(true) });
-    else { vibChart.data.labels = labels; vibChart.data.datasets = vibData; vibChart.update(); }
+    if (!voltageChart) voltageChart = new Chart(document.getElementById("voltageChart"), { type: "line", data: { labels, datasets: voltageData }, options: opts(false) });
+    else { voltageChart.data.labels = labels; voltageChart.data.datasets = voltageData; voltageChart.update(); }
 
-    if (!tempChart) tempChart = new Chart(document.getElementById("tempChart"), { type: "line", data: { labels, datasets: tempData }, options: opts(false) });
-    else { tempChart.data.labels = labels; tempChart.data.datasets = tempData; tempChart.update(); }
+    if (!currentChart) currentChart = new Chart(document.getElementById("currentChart"), { type: "line", data: { labels, datasets: currentData }, options: opts(true) });
+    else { currentChart.data.labels = labels; currentChart.data.datasets = currentData; currentChart.update(); }
   }
 
   function renderTable(readings) {
@@ -125,8 +125,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     tbody.innerHTML = readings.slice(-10).reverse().map(r => `
       <tr>
         <td>${fmtTime(r.timestamp)}</td>
-        <td class="num">${fmtNum(r.temperature, 1)}</td>
-        <td class="num">${fmtNum(r.vibration, 3)}</td>
+        <td class="num">${fmtNum(r.voltage, 1)}</td>
+        <td class="num">${fmtNum(r.current, 2)}</td>
       </tr>`).join("");
   }
 
@@ -134,16 +134,16 @@ document.addEventListener("DOMContentLoaded", async () => {
     e.preventDefault();
     const err = document.getElementById("readingError");
     err.textContent = "";
-    const temperature = parseFloat(document.getElementById("rTemp").value);
-    const vibration = parseFloat(document.getElementById("rVib").value);
-    if (Number.isNaN(temperature) || Number.isNaN(vibration)) {
-      err.textContent = "Enter both a temperature and a vibration value.";
+    const voltage = parseFloat(document.getElementById("rVoltage").value);
+    const currentVal = parseFloat(document.getElementById("rCurrent").value);
+    if (Number.isNaN(voltage) || Number.isNaN(currentVal)) {
+      err.textContent = "Enter both a voltage and a current value.";
       return;
     }
     try {
-      const res = await api.addReading(sel.value, { temperature, vibration });
-      const bad = res.classification !== "NORMAL" || res.temperature_classification !== "NORMAL";
-      toast(bad ? `Reading recorded — ${res.classification.toLowerCase()} vibration, ${res.temperature_classification.toLowerCase()} temperature.` : "Reading recorded — all normal.", bad ? "warn" : "success");
+      const res = await api.addReading(sel.value, { voltage, current: currentVal });
+      const bad = res.classification !== "NORMAL" || res.current_classification !== "NORMAL";
+      toast(bad ? `Reading recorded — ${res.classification.toLowerCase()} voltage, ${res.current_classification.toLowerCase()} current.` : "Reading recorded — all normal.", bad ? "warn" : "success");
       form.reset();
       refresh(false);
       refreshNotifications();
