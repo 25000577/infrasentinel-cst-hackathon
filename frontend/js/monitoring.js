@@ -79,9 +79,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function renderStats(t, readings) {
     const last = readings[readings.length - 1];
-    document.getElementById("mVoltage").textContent = last ? fmtNum(last.voltage, 1) + " V" : "—";
+    document.getElementById("mVoltage").textContent = last && last.voltage !== undefined ? fmtNum(last.voltage, 1) + " V" : (t.voltage !== undefined ? fmtNum(t.voltage, 1) + " V" : "—");
     document.getElementById("mVoltageSub").textContent = `Nominal ${fmtNum(t.nominal_voltage || 230, 0)} V`;
-    document.getElementById("mCurrent").textContent = last ? fmtNum(last.current, 2) + " A" : "—";
+    document.getElementById("mCurrent").textContent = last && last.current !== undefined ? fmtNum(last.current, 2) + " A" : (t.current !== undefined ? fmtNum(t.current, 2) + " A" : "—");
     document.getElementById("mCurrentSub").textContent = `Warn ${fmtNum(t.warn_threshold, 1)} · Critical ${fmtNum(t.crit_threshold, 1)}`;
     document.getElementById("mHealth").innerHTML = healthPill(t.health);
     document.getElementById("mStatus").innerHTML = connectivityPill(t.status);
@@ -90,16 +90,22 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function renderCharts(t, readings, full) {
-    const labels = readings.map(r => new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
-    const flat = (v) => readings.map(() => v);
+    const safeReadings = readings && readings.length ? readings : [{
+      timestamp: new Date().toISOString(),
+      voltage: t.voltage || 230,
+      current: t.current || 45
+    }];
+
+    const labels = safeReadings.map(r => new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" }));
+    const flat = (v) => safeReadings.map(() => v);
 
     const voltageData = [
-      { label: "Voltage (V)", data: readings.map(r => r.voltage), borderColor: "#0054A6", backgroundColor: "rgba(0,84,166,.08)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
+      { label: "Voltage (V)", data: safeReadings.map(r => r.voltage ?? 230), borderColor: "#0054A6", backgroundColor: "rgba(0,84,166,.08)", fill: true, tension: .25, pointRadius: 2, borderWidth: 2 },
       { label: "Warning", data: flat(t.warn_threshold || 250), borderColor: "#D97706", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
       { label: "Critical", data: flat(t.crit_threshold || 265), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
     ];
     const currentData = [
-      { label: "Current (A)", data: readings.map(r => r.current), borderColor: "#D97706", backgroundColor: "rgba(217,119,6,.10)", fill: true, tension: .25, pointRadius: 1.5, borderWidth: 2 },
+      { label: "Current (A)", data: safeReadings.map(r => r.current ?? 45), borderColor: "#D97706", backgroundColor: "rgba(217,119,6,.10)", fill: true, tension: .25, pointRadius: 2, borderWidth: 2 },
       { label: "Limit", data: flat(t.max_current || 100), borderColor: "#DC2626", borderDash: [6, 4], pointRadius: 0, borderWidth: 1.5 },
     ];
 
@@ -113,15 +119,25 @@ document.addEventListener("DOMContentLoaded", async () => {
       scales: { y: { beginAtZero: begin }, x: { ticks: { maxTicksLimit: 8 } } },
     });
 
-    if (!voltageChart) voltageChart = new Chart(document.getElementById("voltageChart"), { type: "line", data: { labels, datasets: voltageData }, options: opts(false) });
-    else { voltageChart.data.labels = labels; voltageChart.data.datasets = voltageData; voltageChart.update(); }
+    if (!voltageChart) {
+      voltageChart = new Chart(document.getElementById("voltageChart"), { type: "line", data: { labels, datasets: voltageData }, options: opts(false) });
+    } else {
+      voltageChart.data.labels = labels;
+      voltageChart.data.datasets = voltageData;
+      voltageChart.update();
+    }
 
-    if (!currentChart) currentChart = new Chart(document.getElementById("currentChart"), { type: "line", data: { labels, datasets: currentData }, options: opts(true) });
-    else { currentChart.data.labels = labels; currentChart.data.datasets = currentData; currentChart.update(); }
+    if (!currentChart) {
+      currentChart = new Chart(document.getElementById("currentChart"), { type: "line", data: { labels, datasets: currentData }, options: opts(true) });
+    } else {
+      currentChart.data.labels = labels;
+      currentChart.data.datasets = currentData;
+      currentChart.update();
+    }
   }
 
   function renderTable(readings) {
-    if (!readings.length) { setEmptyMessage(tbody, 3, "No readings recorded yet."); return; }
+    if (!readings || !readings.length) { setEmptyMessage(tbody, 3, "No readings recorded yet."); return; }
     tbody.innerHTML = readings.slice(-10).reverse().map(r => `
       <tr>
         <td>${fmtTime(r.timestamp)}</td>
