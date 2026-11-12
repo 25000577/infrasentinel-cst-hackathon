@@ -36,14 +36,14 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function render() {
-    const q = document.getElementById("txSearch").value.trim().toLowerCase();
+    const qVal = document.getElementById("txSearch").value.trim().toLowerCase();
     const status = document.getElementById("txStatusFilter").value;
 
     const filtered = all.filter(t => {
-      const matchesQ = !q
-        || t.code.toLowerCase().includes(q)
-        || t.name.toLowerCase().includes(q)
-        || t.location.toLowerCase().includes(q);
+      const matchesQ = !qVal
+        || (t.code && t.code.toLowerCase().includes(qVal))
+        || (t.name && t.name.toLowerCase().includes(qVal))
+        || (t.location && t.location.toLowerCase().includes(qVal));
       const matchesS = !status || t.status === status;
       return matchesQ && matchesS;
     });
@@ -59,12 +59,12 @@ document.addEventListener("DOMContentLoaded", async () => {
         <td>${escapeHtml(t.name)}</td>
         <td>${escapeHtml(t.location)}</td>
         <td>${fmtNum(t.voltage_kv, 0)} kV</td>
-        <td>${statusPill(t.status)}</td>
-        <td>${healthPill(t.health)}</td>
+        <td>${typeof statusPill === "function" ? statusPill(t.status) : connectivityPill(t.status)}</td>
+        <td>${t.status === "ONLINE" ? healthPill(t.health) : "—"}</td>
         <td>${fmtTime(t.last_seen)}</td>
         <td>
-          <button class="btn btn-ghost" data-act="edit"   data-id="${t.id}">Edit</button>
-          <button class="btn btn-ghost" data-act="view"   data-id="${t.id}">View</button>
+          <button class="btn btn-ghost" data-act="edit" data-id="${t.id}">Edit</button>
+          <button class="btn btn-ghost" data-act="view" data-id="${t.id}">View</button>
           <button class="btn btn-danger" data-act="delete" data-id="${t.id}">Remove</button>
         </td>
       </tr>
@@ -73,8 +73,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     tbody.querySelectorAll("button[data-act]").forEach(btn => {
       btn.addEventListener("click", () => {
         const id = Number(btn.dataset.id);
-        if (btn.dataset.act === "edit")   openModal(id);
-        if (btn.dataset.act === "view")   location.href = `monitoring.html?id=${id}`;
+        if (btn.dataset.act === "edit") openModal(id);
+        if (btn.dataset.act === "view") location.href = `monitoring.html?id=${id}`;
         if (btn.dataset.act === "delete") remove(id);
       });
     });
@@ -84,55 +84,77 @@ document.addEventListener("DOMContentLoaded", async () => {
     editingId = id;
     formError.textContent = "";
     form.reset();
-    if (id) {
-      const t = all.find(x => x.id === id);
+    if (id !== null) {
+      const t = all.find(x => Number(x.id) === Number(id));
       if (!t) return;
       modalTitle.textContent = `Edit ${t.code}`;
       document.getElementById("txId").value = t.id;
-      document.getElementById("txCode").value = t.code;
-      document.getElementById("txName").value = t.name;
-      document.getElementById("txLocation").value = t.location;
+      document.getElementById("txCode").value = t.code || "";
+      document.getElementById("txName").value = t.name || "";
+      document.getElementById("txLocation").value = t.location || "";
       document.getElementById("txLat").value = t.lat ?? "";
       document.getElementById("txLng").value = t.lng ?? "";
-      document.getElementById("txKv").value = t.voltage_kv;
-      document.getElementById("txBase").value = t.baseline_vibration;
-      document.getElementById("txWarn").value = t.warn_threshold;
-      document.getElementById("txCrit").value = t.crit_threshold;
-      document.getElementById("txMaxT").value = t.max_temp;
+      document.getElementById("txKv").value = t.voltage_kv ?? "";
+      document.getElementById("txBase").value = t.baseline_vibration ?? "";
+      document.getElementById("txWarn").value = t.warn_threshold ?? "";
+      document.getElementById("txCrit").value = t.crit_threshold ?? "";
+      document.getElementById("txMaxT").value = t.max_temp ?? "";
     } else {
       modalTitle.textContent = "Register transformer";
       document.getElementById("txId").value = "";
+      document.getElementById("txKv").value = "132";
+      document.getElementById("txBase").value = "0.5";
+      document.getElementById("txWarn").value = "1.5";
+      document.getElementById("txCrit").value = "3.0";
+      document.getElementById("txMaxT").value = "85";
     }
-    showModal("txModal");
+    if (typeof showModal === "function") {
+      showModal("txModal");
+    } else {
+      modal.hidden = false;
+    }
   }
 
-  function closeModal() { hideModal("txModal"); }
+  function closeModal() { 
+    if (typeof hideModal === "function") {
+      hideModal("txModal");
+    } else {
+      modal.hidden = true;
+    }
+  }
 
   async function onSubmit(e) {
     e.preventDefault();
     formError.textContent = "";
 
     const body = {
-      code:               document.getElementById("txCode").value.trim(),
-      name:               document.getElementById("txName").value.trim(),
-      location:           document.getElementById("txLocation").value.trim(),
-      lat:                parseFloat(document.getElementById("txLat").value) || null,
-      lng:                parseFloat(document.getElementById("txLng").value) || null,
-      voltage_kv:         parseFloat(document.getElementById("txKv").value),
+      code: document.getElementById("txCode").value.trim(),
+      name: document.getElementById("txName").value.trim(),
+      location: document.getElementById("txLocation").value.trim(),
+      lat: parseFloat(document.getElementById("txLat").value) || null,
+      lng: parseFloat(document.getElementById("txLng").value) || null,
+      voltage_kv: parseFloat(document.getElementById("txKv").value),
       baseline_vibration: parseFloat(document.getElementById("txBase").value) || 0.5,
-      warn_threshold:     parseFloat(document.getElementById("txWarn").value) || 1.5,
-      crit_threshold:     parseFloat(document.getElementById("txCrit").value) || 3.0,
-      max_temp:           parseFloat(document.getElementById("txMaxT").value) || 85,
+      warn_threshold: parseFloat(document.getElementById("txWarn").value) || 1.5,
+      crit_threshold: parseFloat(document.getElementById("txCrit").value) || 3.0,
+      max_temp: parseFloat(document.getElementById("txMaxT").value) || 85,
     };
 
-    if (!body.code || !body.name || !body.location || !body.voltage_kv) {
+    if (!body.code || !body.name || !body.location || Number.isNaN(body.voltage_kv)) {
       formError.textContent = "Please fill in all required fields.";
       return;
     }
 
     try {
-      if (editingId) await api.updateTransformer(editingId, body);
-      else           await api.createTransformer(body);
+      if (editingId) {
+        if (typeof api.updateTransformer === "function") {
+          await api.updateTransformer(editingId, body);
+        } else {
+          await api.saveTransformer(editingId, body);
+        }
+      } else {
+        await api.createTransformer(body);
+      }
       toast("Transformer saved.", "success");
       closeModal();
       await load();
