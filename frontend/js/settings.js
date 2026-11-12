@@ -8,12 +8,29 @@ document.addEventListener("DOMContentLoaded", async () => {
   const auto = document.getElementById("autoResolve");
 
   // Account info
-  const user = getStoredUser() || {};
-  document.getElementById("accountInfo").innerHTML = `
-    <div class="kv-row"><span class="k">Name</span><span class="v">${escapeHtml(user.name || "—")}</span></div>
-    <div class="kv-row"><span class="k">Email</span><span class="v">${escapeHtml(user.email || "—")}</span></div>
-    <div class="kv-row"><span class="k">Role</span><span class="v">${escapeHtml((user.role || "").toUpperCase())}</span></div>
-  `;
+  const user = (typeof getStoredUser === "function" ? getStoredUser() : null) || {};
+  const accountInfoEl = document.getElementById("accountInfo");
+  if (accountInfoEl) {
+    accountInfoEl.innerHTML = `
+      <div class="kv-row"><span class="k">Name</span><span class="v">${escapeHtml(user.name || "—")}</span></div>
+      <div class="kv-row"><span class="k">Email</span><span class="v">${escapeHtml(user.email || "—")}</span></div>
+      <div class="kv-row"><span class="k">Role</span><span class="v">${escapeHtml((user.role || "").toUpperCase())}</span></div>
+    `;
+  }
+
+  // Logout button binding if present
+  const logoutBtn = document.getElementById("logoutBtn2");
+  if (logoutBtn) {
+    logoutBtn.addEventListener("click", async () => {
+      if (!confirm("Are you sure you want to sign out?")) return;
+      try {
+        if (typeof api.logout === "function") await api.logout();
+      } catch (_) {}
+      localStorage.clear();
+      toast("Signed out successfully", "info");
+      setTimeout(() => { window.location.href = "index.html"; }, 800);
+    });
+  }
 
   await load();
 
@@ -22,7 +39,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     err.textContent = "";
     try {
       await api.saveSettings({
-        polling_interval:   Number(poll.value) || 5,
+        polling_interval: Number(poll.value) || 5,
         auto_resolve_warning: auto.checked,
       });
       toast("Settings saved.", "success");
@@ -35,7 +52,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const s = await api.getSettings();
       poll.value = s.polling_interval ?? 5;
-      auto.checked = String(s.auto_resolve_warning) === "true";
+      // Robust boolean coercion handling both boolean and string variants
+      auto.checked = s.auto_resolve_warning === true || String(s.auto_resolve_warning) === "true";
     } catch (ex) {
       err.textContent = ex.message || "Failed to load settings.";
     }
