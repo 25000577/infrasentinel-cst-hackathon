@@ -1,4 +1,4 @@
-/* Map — Leaflet view of every transformer, coloured by health */
+/* Map — Leaflet view of every transformer, coloured by health with Google Maps integration */
 document.addEventListener("DOMContentLoaded", async () => {
   if (!initPageShell()) return;
 
@@ -45,12 +45,18 @@ document.addEventListener("DOMContentLoaded", async () => {
     markers.clear();
 
     located.forEach(t => {
+      const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
       const m = L.marker([t.lat, t.lng], { icon: pin(t), title: t.code }).addTo(map);
+      
       m.bindPopup(`
         <strong>${escapeHtml(t.code)}</strong> — ${escapeHtml(t.name)}<br>
         ${escapeHtml(t.location)} · ${fmtNum(t.voltage_kv, 0)} kV<br>
         Temp ${fmtNum(t.temperature, 1)} °C · Vibration ${fmtNum(t.vibration, 3)}<br>
-        <a href="monitoring.html?id=${t.id}">Open monitoring</a>`);
+        <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <a href="monitoring.html?id=${t.id}">Open monitoring</a>
+          <span>·</span>
+          <a href="${gMapsUrl}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+        </div>`);
       
       // Store using string key to prevent type mismatch issues with dataset
       markers.set(String(t.id), m);
