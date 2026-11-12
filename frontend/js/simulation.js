@@ -6,11 +6,11 @@ document.addEventListener("DOMContentLoaded", async () => {
   const logBox = document.getElementById("simLog");
 
   const SCENARIOS = {
-    tamper:       { call: api.simTamper,       label: "Physical tampering" },
-    overheat:     { call: api.simOverheat,     label: "Overheating" },
-    disconnect:   { call: api.simDisconnect,   label: "Device disconnect" },
+    multimeter:     { call: api.simMultimeter,     label: "Voltage anomaly" },
+    overheat:       { call: api.simOverheat,       label: "Overheating" },
+    disconnect:     { call: api.simDisconnect,     label: "Device disconnect" },
     unauthorised: { call: api.simUnauthorised, label: "Unauthorised device" },
-    restore:      { call: api.simRestore,      label: "Restore device" },
+    restore:        { call: api.simRestore,        label: "Restore device" },
   };
 
   try {
@@ -38,7 +38,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       const res = await sc.call(id);
       let detail = "";
-      if (key === "tamper") detail = ` vibration ${fmtNum(res.vibration, 2)}`;
+      if (key === "multimeter") detail = ` voltage ${fmtNum(res.voltage, 1)} V, current ${fmtNum(res.current, 2)} A`;
       if (key === "overheat") detail = ` temperature ${fmtNum(res.temperature, 1)} °C`;
       if (key === "restore") detail = ` ${res.synced} queued event(s) synced`;
       log(`${sc.label} on ${code} — ${res.severity || "done"}${detail}`, key === "restore" ? "ok" : "err");
