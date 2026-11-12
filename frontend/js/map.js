@@ -17,6 +17,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const COLORS = { NORMAL: "#16A34A", WARNING: "#D97706", CRITICAL: "#DC2626" };
   const markers = new Map();
+  let initialBoundsSet = false;
 
   function pin(t) {
     const offline = t.status !== "ONLINE";
@@ -39,6 +40,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
     const located = data.filter(t => t.lat != null && t.lng != null);
 
+    // Remove old markers
     markers.forEach(m => m.remove());
     markers.clear();
 
@@ -49,10 +51,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         ${escapeHtml(t.location)} · ${fmtNum(t.voltage_kv, 0)} kV<br>
         Temp ${fmtNum(t.temperature, 1)} °C · Vibration ${fmtNum(t.vibration, 3)}<br>
         <a href="monitoring.html?id=${t.id}">Open monitoring</a>`);
-      markers.set(t.id, m);
+      
+      // Store using string key to prevent type mismatch issues with dataset
+      markers.set(String(t.id), m);
     });
 
-    if (located.length) map.fitBounds(L.latLngBounds(located.map(t => [t.lat, t.lng])).pad(0.25));
+    // Only fit bounds on the first load so user pan/zoom isn't hijacked on background refreshes
+    if (located.length && !initialBoundsSet) {
+      map.fitBounds(L.latLngBounds(located.map(t => [t.lat, t.lng])).pad(0.25));
+      initialBoundsSet = true;
+    }
 
     listEl.innerHTML = data.length ? data.map(t => `
       <div class="map-item" data-id="${t.id}">
@@ -60,10 +68,16 @@ document.addEventListener("DOMContentLoaded", async () => {
         ${t.status === "ONLINE" ? healthPill(t.health) : connectivityPill(t.status)}
       </div>`).join("") : `<div class="empty-note">No transformers registered.</div>`;
 
-    listEl.querySelectorAll(".map-item").forEach(el => el.addEventListener("click", () => {
-      const m = markers.get(Number(el.dataset.id));
-      if (m) { map.setView(m.getLatLng(), 11); m.openPopup(); }
-    }));
+    listEl.querySelectorAll(".map-item").forEach(el => {
+      el.addEventListener("click", () => {
+        const markerKey = String(el.dataset.id);
+        const m = markers.get(markerKey);
+        if (m) {
+          map.setView(m.getLatLng(), 13);
+          m.openPopup();
+        }
+      });
+    });
   }
 
   await load();
