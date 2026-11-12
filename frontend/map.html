@@ -63,10 +63,10 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  // Initialize Leaflet Map centered on Limpopo
+  // Initialize Leaflet Map centered on your exact Google Maps link coordinates (-22.9823312, 30.4472737)
   let map;
   try {
-    map = L.map(mapEl, { scrollWheelZoom: true }).setView([-23.3, 30.0], 7);
+    map = L.map(mapEl, { scrollWheelZoom: true }).setView([-22.9823312, 30.4472737], 15);
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 18,
       attribution: "&copy; OpenStreetMap contributors",
@@ -175,7 +175,7 @@ document.addEventListener("DOMContentLoaded", async () => {
           const markerKey = String(el.dataset.id);
           const m = markers.get(markerKey);
           if (m) {
-            map.setView(m.getLatLng(), 13);
+            map.setView(m.getLatLng(), 15);
             m.openPopup();
           }
         });
