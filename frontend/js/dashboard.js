@@ -2,7 +2,7 @@
 document.addEventListener("DOMContentLoaded", async () => {
   if (!initPageShell()) return;
 
-  const state = { severityChart: null, vibrationChart: null, tempChart: null };
+  const state = { severityChart: null, voltageChart: null, currentChart: null };
 
   try {
     const [summary, infra, activity] = await Promise.all([
@@ -46,8 +46,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         <td><strong>${escapeHtml(t.code)}</strong></td>
         <td>${escapeHtml(t.name)}</td>
         <td>${escapeHtml(t.location)}</td>
-        <td>${fmtNum(t.temperature, 1)}</td>
-        <td>${fmtNum(t.vibration, 3)}</td>
+        <td class="num">${fmtNum(t.voltage, 1)}</td>
+        <td class="num">${fmtNum(t.current, 2)}</td>
         <td>${connectivityPill(t.status)}</td>
         <td>${healthPill(t.health)}</td>
       </tr>
@@ -96,57 +96,5 @@ document.addEventListener("DOMContentLoaded", async () => {
         },
       });
     }
-
-    // Vibration + temp (sample across first transformer for overview)
-    const sample = infra && infra.length ? infra[0] : null;
-    if (!sample) return;
-
-    api.getReadings(sample.id, 20).then(readings => {
-      const labels = readings.map(r => new Date(r.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }));
-
-      const vibCtx = document.getElementById("vibrationChart");
-      if (vibCtx) {
-        state.vibrationChart = new Chart(vibCtx, {
-          type: "line",
-          data: {
-            labels,
-            datasets: [{
-              label: `${sample.code} vibration`,
-              data: readings.map(r => r.vibration),
-              borderColor: "#0054A6",
-              backgroundColor: "rgba(0, 84, 166, 0.08)",
-              tension: 0.2, fill: true, pointRadius: 2,
-            }],
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: true } },
-          },
-        });
-      }
-
-      const tCtx = document.getElementById("tempChart");
-      if (tCtx) {
-        state.tempChart = new Chart(tCtx, {
-          type: "line",
-          data: {
-            labels,
-            datasets: [{
-              label: `${sample.code} temperature`,
-              data: readings.map(r => r.temperature),
-              borderColor: "#F59E0B",
-              backgroundColor: "rgba(245, 158, 11, 0.10)",
-              tension: 0.2, fill: true, pointRadius: 2,
-            }],
-          },
-          options: {
-            responsive: true, maintainAspectRatio: false,
-            plugins: { legend: { display: false } },
-            scales: { y: { beginAtZero: false } },
-          },
-        });
-      }
-    }).catch(() => {});
   }
 });
