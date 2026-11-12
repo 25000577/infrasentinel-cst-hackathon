@@ -8,9 +8,9 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+<!-- Mapbox GL JS CSS -->
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.css" rel="stylesheet" />
 <style>
-  /* Guaranteed layout safety for map container */
   .map-card-container {
     position: relative;
     width: 100%;
@@ -20,9 +20,24 @@
     height: 600px !important;
     min-height: 600px !important;
     display: block !important;
-    background-color: #e2e8f0; /* Visible grey placeholder while loading */
+    background-color: #e2e8f0;
     border-radius: 6px;
     z-index: 1;
+  }
+  /* Custom Mapbox Popup styling matching InfraSentinel dark/clean UI */
+  .mapboxgl-popup-content {
+    font-family: 'IBM Plex Sans', sans-serif;
+    padding: 14px;
+    border-radius: 6px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+  }
+  .custom-marker {
+    width: 22px;
+    height: 22px;
+    border-radius: 50%;
+    border: 3px solid #ffffff;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.45);
+    cursor: pointer;
   }
 </style>
 </head>
@@ -45,10 +60,10 @@
         <h2>Network map</h2>
         <p>Green normal · amber warning · red critical · grey offline</p>
       </div>
-      <!-- Map Container with loading text -->
+      <!-- Map Container -->
       <div id="map">
         <div style="padding: 40px; text-align: center; color: #475569; font-family: sans-serif;">
-          Loading map tiles and substation coordinates...
+          Loading Mapbox vector tiles and substation coordinates...
         </div>
       </div>
     </div>
@@ -62,15 +77,16 @@
   </div>
 </main>
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<!-- Mapbox GL JS Library -->
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.3.0/mapbox-gl.js"></script>
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
 <script>
 /* ==========================================================================
-   InfraSentinel — Ultimate Diagnostic Map Controller
+   InfraSentinel — Mapbox GL JS Controller
    ========================================================================== */
 document.addEventListener("DOMContentLoaded", async () => {
-  console.log("Map DOM Content Loaded. Initializing...");
+  console.log("Map DOM Content Loaded. Initializing Mapbox...");
 
   if (typeof initPageShell === "function") {
     try { initPageShell(); } catch (e) { console.warn("initPageShell warning:", e); }
@@ -84,25 +100,29 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  if (typeof L === "undefined") {
-    mapEl.innerHTML = `<div style="padding: 30px; color: #dc2626; font-weight: bold;">Leaflet (L) library failed to load. Check your internet connection or script order.</div>`;
+  if (typeof mapboxgl === "undefined") {
+    mapEl.innerHTML = `<div style="padding: 30px; color: #dc2626; font-weight: bold;">Mapbox GL JS library failed to load. Check your network connection.</div>`;
     return;
   }
 
-  // Initialize Leaflet Map centered on (-22.9823312, 30.4472737)
+  // Set your Mapbox access token
+  mapboxgl.accessToken = 'pk.eyJ1IjoidnV0bGhhcmhpa2h1bWFsbyIsImEiOiJjbXdkajg2NHkwMHh2Mnhvb2Ntd2Z6ZTI1In0.MmoUdpZymqvv_Da6EkihuA';
+
   let map;
   try {
-    map = L.map('map', { scrollWheelZoom: true }).setView([-22.9823312, 30.4472737], 15);
-    
-    // Using CartoDB Positron tiles as a reliable, clean alternative that rarely gets blocked
-    L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
-      maxZoom: 19,
-      attribution: '&copy; <a href="https://carto.com/">CARTO</a>'
-    }).addTo(map);
+    map = new mapboxgl.Map({
+      container: 'map',
+      style: 'mapbox://styles/mapbox/streets-v12', // Clean vector street style
+      center: [30.4472737, -22.9823312], // Mapbox expects [lng, lat]
+      zoom: 14
+    });
 
-    console.log("Leaflet map initialized successfully.");
+    // Add navigation controls (zoom & compass)
+    map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+    console.log("Mapbox GL initialized successfully.");
   } catch (err) {
-    console.error("Map initialization exception:", err);
+    console.error("Mapbox initialization exception:", err);
     mapEl.innerHTML = `<div style="padding: 30px; color: #dc2626;">Map error: ${err.message}</div>`;
     return;
   }
@@ -110,17 +130,6 @@ document.addEventListener("DOMContentLoaded", async () => {
   const COLORS = { NORMAL: "#16A34A", WARNING: "#D97706", CRITICAL: "#DC2626" };
   const markers = new Map();
   let initialBoundsSet = false;
-
-  function pin(t) {
-    const offline = t.status !== "ONLINE";
-    const colour = offline ? "#64748B" : (COLORS[t.health] || COLORS.NORMAL);
-    return L.divIcon({
-      className: "",
-      html: `<span style="display:block;width:20px;height:20px;border-radius:50%;background:${colour};border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45)"></span>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
-    });
-  }
 
   async function loadMapData() {
     let rawData = [];
@@ -147,33 +156,53 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     const located = data.filter(t => t.lat != null && t.lng != null);
 
+    // Remove existing markers
     markers.forEach(m => m.remove());
     markers.clear();
 
+    const bounds = new mapboxgl.LngLatBounds();
+
     located.forEach(t => {
+      const offline = t.status !== "ONLINE";
+      const colour = offline ? "#64748B" : (COLORS[t.health] || COLORS.NORMAL);
       const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
-      const m = L.marker([t.lat, t.lng], { icon: pin(t), title: t.code || "Transformer" }).addTo(map);
-      
+
+      // Create custom DOM element for marker
+      const el = document.createElement('div');
+      el.className = 'custom-marker';
+      el.style.backgroundColor = colour;
+
       const safeCode = typeof escapeHtml === "function" ? escapeHtml(t.code || "") : (t.code || "");
       const safeName = typeof escapeHtml === "function" ? escapeHtml(t.name || "") : (t.name || "");
       const safeLoc = typeof escapeHtml === "function" ? escapeHtml(t.location || "") : (t.location || "");
 
-      m.bindPopup(`
-        <strong>${safeCode}</strong> — ${safeName}<br>
-        ${safeLoc} · ${t.voltage_kv} kV<br>
-        Temp ${t.temperature} °C · Vibration ${t.vibration}<br>
-        <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
-          <a href="monitoring.html?id=${t.id}">Open monitoring</a>
-          <span>·</span>
-          <a href="${gMapsUrl}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
-        </div>`);
-      
-      markers.set(String(t.id), m);
+      const popupHtml = `
+        <div style="font-size: 13px; line-height: 1.4;">
+          <strong>${safeCode}</strong> — ${safeName}<br>
+          <span style="color: #64748b;">${safeLoc} · ${t.voltage_kv} kV</span><br>
+          Temp: <strong>${t.temperature} °C</strong> · Vib: <strong>${t.vibration}</strong><br>
+          <div style="margin-top: 8px; display: flex; gap: 6px; align-items: center;">
+            <a href="monitoring.html?id=${t.id}" style="color: #2563eb; text-decoration: none; font-weight: 500;">Open monitoring</a>
+            <span>·</span>
+            <a href="${gMapsUrl}" target="_blank" rel="noopener" style="color: #2563eb; text-decoration: none;">Google Maps ↗</a>
+          </div>
+        </div>
+      `;
+
+      const popup = new mapboxgl.Popup({ offset: 25 }).setHTML(popupHtml);
+
+      const marker = new mapboxgl.Marker(el)
+        .setLngLat([t.lng, t.lat])
+        .setPopup(popup)
+        .addTo(map);
+
+      markers.set(String(t.id), { marker, lngLat: [t.lng, t.lat], popup });
+      bounds.extend([t.lng, t.lat]);
     });
 
     if (located.length && !initialBoundsSet) {
       try {
-        map.setView([-22.9823312, 30.4472737], 15);
+        map.flyTo({ center: [30.4472737, -22.9823312], zoom: 14 });
         initialBoundsSet = true;
       } catch (e) {
         console.warn("Could not set view:", e);
@@ -187,33 +216,33 @@ document.addEventListener("DOMContentLoaded", async () => {
         const sl = typeof escapeHtml === "function" ? escapeHtml(t.location || "") : (t.location || "");
         
         return `
-          <div class="map-item" data-id="${t.id}" style="cursor: pointer; padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center;">
+          <div class="map-item" data-id="${t.id}" style="cursor: pointer; padding: 10px; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; transition: background 0.15s;">
             <div style="flex-grow: 1;"><strong>${sc}</strong> ${sn}<small style="display:block; color:#64748b;">${sl}</small></div>
-            <span style="padding: 2px 8px; background: #e2e8f0; border-radius: 4px; font-size: 11px;">${t.status}</span>
+            <span style="padding: 2px 8px; background: #e2e8f0; border-radius: 4px; font-size: 11px; font-weight: 500;">${t.status}</span>
           </div>`;
       }).join("") : `<div style="padding: 15px; color: #64748b;">No transformers registered.</div>`;
 
       listEl.querySelectorAll(".map-item").forEach(el => {
         el.addEventListener("click", () => {
           const markerKey = String(el.dataset.id);
-          const m = markers.get(markerKey);
-          if (m) {
-            map.setView(m.getLatLng(), 17);
-            m.openPopup();
+          const item = markers.get(markerKey);
+          if (item) {
+            map.flyTo({ center: item.lngLat, zoom: 16, essential: true });
+            item.marker.togglePopup();
           }
         });
       });
     }
   }
 
-  await loadMapData();
+  map.on('load', async () => {
+    await loadMapData();
+  });
   
   const refreshBtn = document.getElementById("refreshMapBtn");
   if (refreshBtn) {
     refreshBtn.addEventListener("click", loadMapData);
   }
-
-  setTimeout(() => map.invalidateSize(), 300);
 });
 </script>
 </body>
