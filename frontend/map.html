@@ -4,7 +4,9 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Map — InfraSentinel</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="css/styles.css">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
 </head>
@@ -38,9 +40,159 @@
     </div>
   </div>
 </main>
+
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
 <script src="js/api.js"></script>
 <script src="js/ui.js"></script>
-<script src="js/map.js"></script>
+<script>
+/* ==========================================================================
+   InfraSentinel — Hardened Map Controller (Self-Contained Logic)
+   ========================================================================== */
+document.addEventListener("DOMContentLoaded", async () => {
+  if (typeof initPageShell === "function") {
+    try { initPageShell(); } catch (e) { console.warn("initPageShell warning:", e); }
+  }
+
+  const mapEl = document.getElementById("map");
+  const listEl = document.getElementById("mapList");
+  
+  if (!mapEl) return;
+
+  if (typeof L === "undefined") {
+    mapEl.innerHTML = `<div class="empty-note" style="padding: 20px; color: #dc2626;">Leaflet library failed to load. Check your internet connection.</div>`;
+    return;
+  }
+
+  // Initialize Leaflet Map centered on Limpopo
+  let map;
+  try {
+    map = L.map(mapEl, { scrollWheelZoom: true }).setView([-23.3, 30.0], 7);
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 18,
+      attribution: "&copy; OpenStreetMap contributors",
+    }).addTo(map);
+  } catch (err) {
+    console.error("Map initialization error:", err);
+    return;
+  }
+
+  const COLORS = { NORMAL: "#16A34A", WARNING: "#D97706", CRITICAL: "#DC2626" };
+  const markers = new Map();
+  let initialBoundsSet = false;
+
+  function pin(t) {
+    const offline = t.status !== "ONLINE";
+    const colour = offline ? "#64748B" : (COLORS[t.health] || COLORS.NORMAL);
+    return L.divIcon({
+      className: "",
+      html: `<span style="display:block;width:20px;height:20px;border-radius:50%;background:${colour};border:3px solid #fff;box-shadow:0 1px 6px rgba(0,0,0,.45)"></span>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+  }
+
+  async function loadMapData() {
+    let rawData;
+    try {
+      rawData = await api.infrastructure();
+    } catch (err) {
+      if (typeof toast === "function") {
+        toast(err.message || "Failed to load map data", "error");
+      } else {
+        console.error("Failed to load map data:", err);
+      }
+      return;
+    }
+
+    // Safely unwrap data array whether returned raw or wrapped in an object
+    let data = [];
+    if (Array.isArray(rawData)) {
+      data = rawData;
+    } else if (rawData && Array.isArray(rawData.data)) {
+      data = rawData.data;
+    } else if (rawData && Array.isArray(rawData.transformers)) {
+      data = rawData.transformers;
+    }
+
+    const located = data.filter(t => t.lat != null && t.lng != null);
+
+    // Remove old markers before redrawing
+    markers.forEach(m => m.remove());
+    markers.clear();
+
+    located.forEach(t => {
+      const gMapsUrl = `https://www.google.com/maps/search/?api=1&query=${t.lat},${t.lng}`;
+      const m = L.marker([t.lat, t.lng], { icon: pin(t), title: t.code || "Transformer" }).addTo(map);
+      
+      const safeCode = typeof escapeHtml === "function" ? escapeHtml(t.code || "") : (t.code || "");
+      const safeName = typeof escapeHtml === "function" ? escapeHtml(t.name || "") : (t.name || "");
+      const safeLoc = typeof escapeHtml === "function" ? escapeHtml(t.location || "") : (t.location || "");
+
+      m.bindPopup(`
+        <strong>${safeCode}</strong> — ${safeName}<br>
+        ${safeLoc} · ${typeof fmtNum === "function" ? fmtNum(t.voltage_kv, 0) : t.voltage_kv} kV<br>
+        Temp ${typeof fmtNum === "function" ? fmtNum(t.temperature, 1) : t.temperature} °C · Vibration ${typeof fmtNum === "function" ? fmtNum(t.vibration, 3) : t.vibration}<br>
+        <div style="margin-top: 6px; display: flex; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <a href="monitoring.html?id=${t.id}">Open monitoring</a>
+          <span>·</span>
+          <a href="${gMapsUrl}" target="_blank" rel="noopener">Open in Google Maps ↗</a>
+        </div>`);
+      
+      markers.set(String(t.id), m);
+    });
+
+    if (located.length && !initialBoundsSet) {
+      try {
+        map.fitBounds(L.latLngBounds(located.map(t => [t.lat, t.lng])).pad(0.25));
+        initialBoundsSet = true;
+      } catch (e) {
+        console.warn("Could not fit bounds:", e);
+      }
+    }
+
+    if (listEl) {
+      listEl.innerHTML = data.length ? data.map(t => {
+        const sc = typeof escapeHtml === "function" ? escapeHtml(t.code || "") : (t.code || "");
+        const sn = typeof escapeHtml === "function" ? escapeHtml(t.name || "") : (t.name || "");
+        const sl = typeof escapeHtml === "function" ? escapeHtml(t.location || "") : (t.location || "");
+        
+        let pill = t.status;
+        if (t.status === "ONLINE" && typeof healthPill === "function") {
+          pill = healthPill(t.health);
+        } else if (typeof connectivityPill === "function") {
+          pill = connectivityPill(t.status);
+        }
+        
+        return `
+          <div class="map-item" data-id="${t.id}" style="cursor: pointer; padding: 10px; border-bottom: 1px solid var(--border-color, #eee); display: flex; align-items: center;">
+            <div class="grow"><strong>${sc}</strong> ${sn}<small style="display:block; color:#64748b;">${sl}</small></div>
+            ${pill}
+          </div>`;
+      }).join("") : `<div class="empty-note" style="padding: 15px;">No transformers registered.</div>`;
+
+      listEl.querySelectorAll(".map-item").forEach(el => {
+        el.addEventListener("click", () => {
+          const markerKey = String(el.dataset.id);
+          const m = markers.get(markerKey);
+          if (m) {
+            map.setView(m.getLatLng(), 13);
+            m.openPopup();
+          }
+        });
+      });
+    }
+  }
+
+  await loadMapData();
+  
+  const refreshBtn = document.getElementById("refreshMapBtn");
+  if (refreshBtn) {
+    refreshBtn.addEventListener("click", loadMapData);
+  }
+
+  setInterval(loadMapData, 15000);
+  setTimeout(() => map.invalidateSize(), 200);
+});
+</script>
 </body>
 </html>
