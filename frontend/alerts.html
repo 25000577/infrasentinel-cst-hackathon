@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Alerts & Incidents — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="alerts">
+<main class="page">
+  <div class="page-head">
+    <div>
+      <h1>Alerts & Incidents</h1>
+      <p>Monitor vibration anomalies, temperature threshold breaches, and offline grid assets.</p>
+    </div>
+    <div class="page-actions" id="pageActions">
+      <button class="btn btn-outline" id="clearAcknowledgedBtn">Clear Acknowledged</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="toolbar">
+      <input id="alertSearch" class="control grow" type="search" placeholder="Search by transformer code or description" aria-label="Search alerts">
+      <select id="severityFilter" class="control" aria-label="Filter by severity">
+        <option value="">All severities</option>
+        <option value="CRITICAL">Critical</option>
+        <option value="WARNING">Warning</option>
+      </select>
+    </div>
+    <div class="table-wrap">
+      <table id="alertsTable">
+        <thead>
+          <tr>
+            <th>Time</th>
+            <th>Transformer</th>
+            <th>Severity</th>
+            <th>Description</th>
+            <th>Status</th>
+            <th class="right">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Dynamically populated -->
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/alerts.js"></script>
+</body>
+</html>
