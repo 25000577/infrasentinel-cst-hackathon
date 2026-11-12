@@ -29,12 +29,20 @@ document.addEventListener("DOMContentLoaded", async () => {
     return;
   }
 
-  sel.innerHTML = transformers.map(t => `<option value="${t.id}">${escapeHtml(t.code)} — ${escapeHtml(t.name)}</option>`).join("");
-  const wanted = Number(new URLSearchParams(location.search).get("id"));
-  sel.value = transformers.some(t => t.id === wanted) ? String(wanted) : String(transformers[0].id);
+  // Populate dropdown with string-safe IDs
+  sel.innerHTML = transformers.map(t => `<option value="${String(t.id)}">${escapeHtml(t.code)} — ${escapeHtml(t.name)}</option>`).join("");
+  
+  const urlParamId = new URLSearchParams(location.search).get("id");
+  const matchingTransformer = transformers.find(t => String(t.id) === String(urlParamId));
+  sel.value = matchingTransformer ? String(matchingTransformer.id) : String(transformers[0].id);
+  
   document.getElementById("pollInfo").textContent = `Refreshes every ${interval}s`;
 
-  sel.addEventListener("change", () => { history.replaceState(null, "", "?id=" + sel.value); refresh(true); });
+  sel.addEventListener("change", () => { 
+    history.replaceState(null, "", "?id=" + sel.value); 
+    refresh(true); 
+  });
+  
   feed.addEventListener("change", () => toast(feed.checked ? "Simulated sensor feed started." : "Simulated sensor feed stopped.", "info"));
   form.addEventListener("submit", onManualReading);
 
@@ -53,7 +61,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   async function refresh(full) {
-    const id = Number(sel.value);
+    const id = sel.value; // Keep as string for safe comparison
     try {
       const [t, readings] = await Promise.all([api.getTransformer(id), api.getReadings(id, 60)]);
       current = t;
@@ -133,7 +141,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       return;
     }
     try {
-      const res = await api.addReading(Number(sel.value), { temperature, vibration });
+      const res = await api.addReading(sel.value, { temperature, vibration });
       const bad = res.classification !== "NORMAL" || res.temperature_classification !== "NORMAL";
       toast(bad ? `Reading recorded — ${res.classification.toLowerCase()} vibration, ${res.temperature_classification.toLowerCase()} temperature.` : "Reading recorded — all normal.", bad ? "warn" : "success");
       form.reset();
