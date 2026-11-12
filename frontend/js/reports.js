@@ -22,8 +22,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         <tr><td>Online</td><td>${s.online ?? "—"}</td></tr>
         <tr><td>Offline periods</td><td>${s.offline_events ?? "—"}</td></tr>
         <tr><td>Security incidents</td><td>${s.incidents ?? "—"}</td></tr>
-        <tr><td>Vibration anomalies</td><td>${s.vibration_anomalies ?? "—"}</td></tr>
-        <tr><td>Temperature warnings</td><td>${s.temperature_warnings ?? "—"}</td></tr>
+        <tr><td>Voltage anomalies</td><td>${s.voltage_anomalies ?? "—"}</td></tr>
+        <tr><td>Current warnings</td><td>${s.current_warnings ?? "—"}</td></tr>
         <tr><td>Auth failures</td><td>${s.auth_failures ?? "—"}</td></tr>
         <tr><td>Audit verification</td><td>${escapeHtml(s.audit_status || "—")}</td></tr>
       `;
