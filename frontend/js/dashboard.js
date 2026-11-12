@@ -24,8 +24,8 @@ document.addEventListener("DOMContentLoaded", async () => {
       { label: "Total Transformers", value: s.total,    cls: "" },
       { label: "Online",             value: s.online,   cls: "green" },
       { label: "Offline",            value: s.offline,  cls: "grey" },
-      { label: "Active Incidents",   value: s.incidents, cls: "orange" },
-      { label: "Critical Alerts",    value: s.critical, cls: "red" },
+      { label: "Electrical Faults",   value: s.incidents, cls: "orange" },
+      { label: "Critical Warnings",    value: s.critical, cls: "red" },
     ];
     document.getElementById("statCards").innerHTML = cards.map(c => `
       <div class="stat-card ${c.cls}">
