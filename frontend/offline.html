@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Offline sync — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="offline">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Offline sync</h1><p>Record events while a site has no connection; they sync automatically when it returns.</p></div>
+    <div class="page-actions" id="pageActions"><label class="switch"><input type="checkbox" id="forceOffline"> Simulate offline mode</label><span class="live" id="netState"><i></i><span></span></span><button class="btn btn-primary" id="syncBtn">Sync now</button></div>
+  </div>
+  <div class="stat-grid four" style="margin-bottom:20px">
+    <div class="stat-card"><div class="stat-label">Waiting to sync</div><div class="stat-value" id="queueCount">0</div></div>
+  </div>
+  <div class="grid cols-main">
+    <div class="card">
+      <div class="card-head"><h2>Queued events</h2><button class="btn btn-ghost" id="clearQueue">Discard all</button></div>
+      <div class="table-wrap"><table id="queueTable"><thead><tr><th>Event</th><th>Type</th><th>Severity</th><th>Recorded</th><th>ID</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <form class="card" id="evForm" novalidate>
+      <div class="card-head"><h2>Log a field event</h2></div>
+      <div class="card-body">
+        <div class="field"><label for="evTx">Transformer</label><select id="evTx"></select></div>
+        <div class="form-row">
+          <div class="field"><label for="evType">Type</label><select id="evType"><option value="FIELD_INSPECTION">Field inspection</option><option value="TAMPER_SUSPECTED">Tamper suspected</option><option value="MAINTENANCE">Maintenance</option><option value="OUTAGE">Outage</option></select></div>
+          <div class="field"><label for="evSev">Severity</label><select id="evSev"><option value="INFO">Info</option><option value="WARNING">Warning</option><option value="CRITICAL">Critical</option></select></div>
+        </div>
+        <div class="field"><label for="evDesc">What happened?</label><textarea id="evDesc" placeholder="Fence cut at north gate"></textarea></div>
+        <div class="form-error" id="evError" role="alert"></div>
+        <button class="btn btn-primary btn-block" type="submit">Log event</button>
+      </div>
+    </form>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/offline.js"></script>
+</body>
+</html>

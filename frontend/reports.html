@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Reports — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="reports">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Reports</h1><p>Summaries for a date range, exportable as CSV or PDF.</p></div>
+    <div class="page-actions" id="pageActions"><button class="btn btn-outline" id="exportPdf">Print / save PDF</button><button class="btn btn-primary" id="exportCsv">Export events CSV</button></div>
+  </div>
+  <div class="card" style="margin-bottom:20px">
+    <div class="toolbar">
+      <label class="lbl" for="fromDate">From</label><input id="fromDate" type="date" class="control">
+      <label class="lbl" for="toDate">To</label><input id="toDate" type="date" class="control">
+      <button class="btn btn-primary" id="applyBtn">Apply</button>
+      <button class="btn btn-outline" id="clearBtn">Clear</button>
+    </div>
+  </div>
+  <div class="grid cols-main">
+    <div class="card"><div class="card-head"><h2>Summary</h2></div><div class="table-wrap"><table id="repTable"><thead><tr><th>Metric</th><th class="num">Value</th></tr></thead><tbody></tbody></table></div></div>
+    <div class="card"><div class="card-head"><h2>Connectivity</h2></div><div class="chart-box"><canvas id="healthChart"></canvas></div></div>
+  </div>
+  <div class="card"><div class="card-head"><h2>Events by severity</h2></div><div class="chart-box"><canvas id="repSevChart"></canvas></div></div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/reports.js"></script>
+</body>
+</html>

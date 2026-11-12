@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Map — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.css">
+</head>
+<body data-page="map">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Map</h1><p>Transformer locations across Limpopo, coloured by health.</p></div>
+    <div class="page-actions" id="pageActions"></div>
+  </div>
+  <div class="grid cols-main">
+    <div class="card"><div class="card-head"><h2>Network map</h2><p>Green normal · amber warning · red critical · grey offline</p></div><div id="map"></div></div>
+    <div class="card"><div class="card-head"><h2>Transformers</h2></div><div class="map-list" id="mapList"></div></div>
+  </div>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/map.js"></script>
+</body>
+</html>

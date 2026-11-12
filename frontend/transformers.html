@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Transformers — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="transformers">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Transformers</h1><p>Register, edit and remove the transformers under watch.</p></div>
+    <div class="page-actions" id="pageActions"><button class="btn btn-primary" id="addBtn">Register transformer</button></div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <input id="txSearch" class="control grow" type="search" placeholder="Search by code, name or location" aria-label="Search transformers">
+      <select id="txStatusFilter" class="control" aria-label="Filter by connectivity">
+        <option value="">All connectivity</option><option value="ONLINE">Online</option><option value="OFFLINE">Offline</option>
+      </select>
+    </div>
+    <div class="table-wrap"><table id="txTable"><thead><tr><th>Code</th><th>Name</th><th>Location</th><th>Voltage</th><th>Connectivity</th><th>Health</th><th>Last seen</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+
+  <div class="modal-backdrop" id="txModal" hidden>
+    <form class="modal" id="txForm" novalidate role="dialog" aria-modal="true" aria-labelledby="txModalTitle">
+      <div class="modal-head"><h2 id="txModalTitle">Register transformer</h2><button type="button" class="modal-close" id="txClose" aria-label="Close">&times;</button></div>
+      <div class="modal-body">
+        <input type="hidden" id="txId">
+        <div class="form-row">
+          <div class="field"><label for="txCode">Code *</label><input id="txCode" placeholder="TX-006" required></div>
+          <div class="field"><label for="txKv">Voltage (kV) *</label><input id="txKv" type="number" step="any" min="0" placeholder="132" required></div>
+        </div>
+        <div class="field"><label for="txName">Name *</label><input id="txName" placeholder="Louis Trichardt Substation" required></div>
+        <div class="field"><label for="txLocation">Location *</label><input id="txLocation" placeholder="Louis Trichardt, Limpopo" required></div>
+        <div class="form-row">
+          <div class="field"><label for="txLat">Latitude</label><input id="txLat" type="number" step="any" placeholder="-23.0489"></div>
+          <div class="field"><label for="txLng">Longitude</label><input id="txLng" type="number" step="any" placeholder="30.4834"></div>
+        </div>
+        <div class="form-row">
+          <div class="field"><label for="txBase">Baseline vibration</label><input id="txBase" type="number" step="any" placeholder="0.5"></div>
+          <div class="field"><label for="txMaxT">Max temperature (°C)</label><input id="txMaxT" type="number" step="any" placeholder="85"></div>
+          <div class="field"><label for="txWarn">Warning threshold</label><input id="txWarn" type="number" step="any" placeholder="1.5"></div>
+          <div class="field"><label for="txCrit">Critical threshold</label><input id="txCrit" type="number" step="any" placeholder="3.0"></div>
+        </div>
+        <div class="form-error" id="txFormError" role="alert"></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" id="txCancel">Cancel</button><button type="submit" class="btn btn-primary">Save transformer</button></div>
+    </form>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/transformers.js"></script>
+</body>
+</html>

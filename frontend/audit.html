@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Audit trail — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="audit">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Audit trail</h1><p>Every event is chained to the one before it with SHA-256, so any edit to history is detectable.</p></div>
+    <div class="page-actions" id="pageActions"><button class="btn btn-outline" id="tamperTestBtn">Run tamper test</button><button class="btn btn-primary" id="verifyBtn">Verify chain</button></div>
+  </div>
+  <div class="verify-box" id="verifyResult" hidden></div>
+  <div class="card">
+    <div class="table-wrap"><table id="auditTable"><thead><tr><th>#</th><th>Event ID</th><th>Description</th><th>Transformer</th><th>Previous hash</th><th>Hash</th><th>Time</th></tr></thead><tbody></tbody></table></div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/audit.js"></script>
+</body>
+</html>

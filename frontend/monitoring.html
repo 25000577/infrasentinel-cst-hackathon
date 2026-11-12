@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="monitoring">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Monitoring</h1><p>Temperature and vibration readings against each transformer’s thresholds.</p></div>
+    <div class="page-actions" id="pageActions"></div>
+  </div>
+  <div id="monBody">
+  <div class="card" style="margin-bottom:20px">
+    <div class="toolbar">
+      <label class="lbl" for="txSelect">Transformer</label>
+      <select id="txSelect" class="control grow"></select>
+      <label class="switch"><input type="checkbox" id="feedToggle"> Simulated sensor feed</label>
+      <span class="live" id="liveState"><i></i><span>Connecting…</span></span>
+      <span class="muted" id="pollInfo"></span>
+    </div>
+  </div>
+  <div class="stat-grid four">
+    <div class="stat-card orange"><div class="stat-label">Temperature</div><div class="stat-value" id="mTemp">—</div><div class="stat-sub" id="mTempSub">&nbsp;</div></div>
+    <div class="stat-card"><div class="stat-label">Vibration</div><div class="stat-value" id="mVib">—</div><div class="stat-sub" id="mVibSub">&nbsp;</div></div>
+    <div class="stat-card green"><div class="stat-label">Health</div><div class="stat-value" style="font-size:20px;padding-top:8px" id="mHealth">—</div><div class="stat-sub" id="mStatus">&nbsp;</div></div>
+    <div class="stat-card grey"><div class="stat-label">Last seen</div><div class="stat-value" id="mSeen">—</div><div class="stat-sub" id="mSeenSub">&nbsp;</div></div>
+  </div>
+  <div class="grid cols-2">
+    <div class="card"><div class="card-head"><h2>Vibration</h2></div><div class="chart-box tall"><canvas id="vibChart"></canvas></div></div>
+    <div class="card"><div class="card-head"><h2>Temperature</h2></div><div class="chart-box tall"><canvas id="tempChart"></canvas></div></div>
+  </div>
+  <div class="grid cols-main">
+    <div class="card">
+      <div class="card-head"><h2>Latest readings</h2></div>
+      <div class="table-wrap"><table id="readTable"><thead><tr><th>Time</th><th class="num">Temperature (°C)</th><th class="num">Vibration</th></tr></thead><tbody></tbody></table></div>
+    </div>
+    <form class="card" id="readingForm" novalidate>
+      <div class="card-head"><h2>Record a reading</h2></div>
+      <div class="card-body">
+        <div class="field"><label for="rTemp">Temperature (°C)</label><input id="rTemp" type="number" step="any" placeholder="58.5"></div>
+        <div class="field"><label for="rVib">Vibration</label><input id="rVib" type="number" step="any" placeholder="0.52"></div>
+        <div class="form-error" id="readingError" role="alert"></div>
+        <button class="btn btn-primary btn-block" type="submit">Save reading</button>
+      </div>
+    </form>
+  </div>
+  </div>
+</main>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/monitoring.js"></script>
+</body>
+</html>

@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Incidents — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="incidents">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Incidents</h1><p>Warnings and critical events become incidents you can assign and resolve.</p></div>
+    <div class="page-actions" id="pageActions"></div>
+  </div>
+  <div class="card">
+    <div class="toolbar"><select id="incStatus" class="control" aria-label="Filter by status"><option value="">All statuses</option><option value="OPEN">Open</option><option value="INVESTIGATING">Investigating</option><option value="RESOLVED">Resolved</option></select></div>
+    <div class="table-wrap"><table id="incTable"><thead><tr><th>Reference</th><th>Transformer</th><th>Type</th><th>Severity</th><th>Created</th><th>Status</th><th>Assigned to</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="modal-backdrop" id="incModal" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="incTitle">
+      <div class="modal-head"><h2 id="incTitle">Incident</h2><button type="button" class="modal-close" id="incClose" aria-label="Close">&times;</button></div>
+      <div class="modal-body">
+        <div class="field"><label for="incDesc">Description</label><textarea id="incDesc" readonly></textarea></div>
+        <div class="form-row">
+          <div class="field"><label for="incStatusSel">Status</label><select id="incStatusSel"><option value="OPEN">Open</option><option value="INVESTIGATING">Investigating</option><option value="RESOLVED">Resolved</option></select></div>
+          <div class="field"><label for="incAssigned">Assigned to</label><input id="incAssigned" placeholder="Name or team"></div>
+        </div>
+        <div class="field"><label for="incNotes">Notes</label><textarea id="incNotes" placeholder="What has been checked or done?"></textarea></div>
+      </div>
+      <div class="modal-foot"><button type="button" class="btn btn-outline" id="incCancel">Cancel</button><button type="button" class="btn btn-primary" id="incSave">Save changes</button></div>
+    </div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/incidents.js"></script>
+</body>
+</html>

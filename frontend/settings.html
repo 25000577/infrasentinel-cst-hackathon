@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Settings — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="settings">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Settings</h1><p>Monitoring preferences and your account.</p></div>
+    <div class="page-actions" id="pageActions"></div>
+  </div>
+  <div class="grid cols-2">
+    <form class="card" id="settingsForm" novalidate>
+      <div class="card-head"><h2>Monitoring</h2></div>
+      <div class="card-body">
+        <div class="field"><label for="pollingInterval">Refresh interval (seconds)</label><input id="pollingInterval" type="number" min="2" max="60" step="1"><span class="field-hint">How often the monitoring page reloads readings.</span></div>
+        <label class="switch" style="margin-bottom:16px"><input type="checkbox" id="autoResolve"> Resolve warnings automatically when readings return to normal</label>
+        <div class="form-error" id="settingsError" role="alert"></div>
+        <button class="btn btn-primary" type="submit">Save settings</button>
+      </div>
+    </form>
+    <div class="card">
+      <div class="card-head"><h2>Account</h2></div>
+      <div class="card-body"><div id="accountInfo"></div><div style="margin-top:16px"><button class="btn btn-outline" id="logoutBtn2">Sign out</button></div></div>
+    </div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/settings.js"></script>
+</body>
+</html>

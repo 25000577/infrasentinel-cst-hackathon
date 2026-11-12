@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css" />
+</head>
+<body class="auth-page">
+  <aside class="auth-aside">
+    <div class="brand">
+      <div class="brand-mark">IS</div>
+      <div><strong>InfraSentinel</strong><span>Cyber-physical security platform</span></div>
+    </div>
+    <div>
+      <h2>See tampering and faults at the transformer before they become outages.</h2>
+      <p>One console for sensor health, threat detection and a tamper-evident record of everything that happens on the grid.</p>
+      <ul>
+        <li>Live temperature and vibration monitoring with thresholds per site</li>
+        <li>Incidents raised automatically from warnings and attacks</li>
+        <li>Hash-chained audit trail that proves records were not altered</li>
+        <li>Offline event capture for substations with unreliable links</li>
+      </ul>
+    </div>
+    <small>University of Venda · CyberSecureTech Hackathon</small>
+  </aside>
+
+  <main class="auth-main">
+    <div class="auth-wrap">
+      <div class="auth-card">
+        <h1>Sign in</h1>
+        <p class="muted">Access the transformer monitoring command centre.</p>
+
+        <form id="loginForm" novalidate>
+          <div class="field">
+            <label for="email">Email address</label>
+            <input type="email" id="email" name="email" autocomplete="username"
+                   placeholder="you@infrasentinel.local" required autofocus />
+            <span class="field-error" data-for="email"></span>
+          </div>
+
+          <div class="field">
+            <label for="password">Password</label>
+            <div class="password-wrap">
+              <input type="password" id="password" name="password"
+                     autocomplete="current-password" placeholder="Your password"
+                     required minlength="6" />
+              <button type="button" class="pw-toggle" id="pwToggle">Show</button>
+            </div>
+            <span class="field-error" data-for="password"></span>
+          </div>
+
+          <div class="auth-row">
+            <label class="checkbox">
+              <input type="checkbox" id="remember" checked /> Keep me signed in
+            </label>
+          </div>
+
+          <div class="form-error" id="formError" role="alert"></div>
+
+          <button type="submit" class="btn btn-primary btn-block" id="loginBtn">Sign in</button>
+        </form>
+
+        <div class="demo-hint">
+          <strong>Demo accounts</strong>
+          <div>admin@infrasentinel.local / Sentinel@2024</div>
+          <div>analyst@infrasentinel.local / Analyst@2024</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+  /* ==========================================================================
+     InfraSentinel — Login page (self-contained)
+     ========================================================================== */
+
+  /* Detect backend host dynamically. */
+  function detectApiBase() {
+    const qs = new URLSearchParams(location.search);
+    if (qs.get("api")) {
+      const v = qs.get("api").replace(/\/$/, "");
+      try { sessionStorage.setItem("is_api_base", v); } catch (_) {}
+      return v;
+    }
+    try {
+      const saved = sessionStorage.getItem("is_api_base");
+      if (saved) return saved;
+    } catch (_) {}
+
+    // If we are served over HTTP/HTTPS (Render, localhost, etc.),
+    // the API is on the exact same origin.
+    if (location.protocol === "http:" || location.protocol === "https:") {
+      return location.origin;
+    }
+
+    // Fallback for file:// testing
+    return "http://localhost:8000";
+  }
+
+  const API_BASE = detectApiBase();
+
+  /* Login request with timeout + robust error extraction */
+  async function loginRequest(email, password) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 10000);
+
+    let res;
+    try {
+      res = await fetch(API_BASE + "/api/auth/login", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Accept: "application/json" },
+        body: JSON.stringify({ email, password }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === "AbortError")
+        throw new Error("Login timed out. Is the backend running?");
+      throw new Error(`Cannot reach the server at ${API_BASE}. Is the backend running?`);
+    } finally {
+      clearTimeout(timer);
+    }
+
+    let data = null;
+    const text = await res.text();
+    if (text) { try { data = JSON.parse(text); } catch { data = text; } }
+
+    if (!res.ok) {
+      const msg =
+        (data && (data.detail || data.message)) ||
+        (typeof data === "string" ? data : "") ||
+        `Login failed (HTTP ${res.status}).`;
+      throw new Error(msg);
+    }
+    return data;
+  }
+
+  /* Token storage respects "Remember me" */
+  const STORAGE_KEYS = { token: "is_token", user: "is_user" };
+
+  function storeSession(token, user, remember) {
+    const store = remember ? localStorage : sessionStorage;
+    const other = remember ? sessionStorage : localStorage;
+
+    // Clear any stale copy in the *other* store
+    other.removeItem(STORAGE_KEYS.token);
+    other.removeItem(STORAGE_KEYS.user);
+
+    store.setItem(STORAGE_KEYS.token, token);
+    store.setItem(STORAGE_KEYS.user, JSON.stringify(user));
+  }
+
+  function getExistingSession() {
+    return (
+      localStorage.getItem(STORAGE_KEYS.token) ||
+      sessionStorage.getItem(STORAGE_KEYS.token) ||
+      null
+    );
+  }
+
+  document.addEventListener("DOMContentLoaded", () => {
+    // If already signed in, skip the form
+    if (getExistingSession()) {
+      window.location.replace("dashboard.html");
+      return;
+    }
+
+    const form   = document.getElementById("loginForm");
+    const errBox = document.getElementById("formError");
+    const pw     = document.getElementById("password");
+    const toggle = document.getElementById("pwToggle");
+    const btn    = document.getElementById("loginBtn");
+    const remember = document.getElementById("remember");
+
+    toggle.addEventListener("click", () => {
+      const isPw = pw.type === "password";
+      pw.type = isPw ? "text" : "password";
+      toggle.textContent = isPw ? "Hide" : "Show";
+      pw.focus();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      errBox.textContent = "";
+      document.querySelectorAll(".field-error").forEach((el) => (el.textContent = ""));
+
+      const email = form.email.value.trim();
+      const password = form.password.value;
+      let ok = true;
+
+      if (!email || !/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+        document.querySelector('[data-for="email"]').textContent =
+          "Enter a valid email address.";
+        ok = false;
+      }
+      if (password.length < 6) {
+        document.querySelector('[data-for="password"]').textContent =
+          "Password must be at least 6 characters.";
+        ok = false;
+      }
+      if (!ok) return;
+
+      btn.disabled = true;
+      btn.textContent = "Signing in…";
+      try {
+        const res = await loginRequest(email, password);
+        storeSession(res.token, res.user, remember.checked);
+        window.location.href = "dashboard.html";
+      } catch (err) {
+        errBox.textContent = err.message || "Login failed.";
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Sign in";
+      }
+    });
+  });
+  </script>
+</body>
+</html>

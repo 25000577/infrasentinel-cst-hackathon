@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Threat detection — InfraSentinel</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/styles.css">
+
+</head>
+<body data-page="threats">
+<main class="page">
+  <div class="page-head">
+    <div><h1>Threat detection</h1><p>Security events raised by sensors, devices and simulations.</p></div>
+    <div class="page-actions" id="pageActions"><button class="btn btn-outline" id="refreshBtn">Refresh</button></div>
+  </div>
+  <div class="card">
+    <div class="toolbar">
+      <select id="sevFilter" class="control" aria-label="Filter by severity"><option value="">All severities</option><option value="CRITICAL">Critical</option><option value="WARNING">Warning</option><option value="INFO">Info</option></select>
+      <select id="statusFilter" class="control" aria-label="Filter by status"><option value="">All statuses</option><option value="OPEN">Open</option><option value="INVESTIGATING">Investigating</option><option value="RESOLVED">Resolved</option></select>
+    </div>
+    <div class="table-wrap"><table id="threatTable"><thead><tr><th>Event</th><th>Transformer</th><th>Type</th><th>Severity</th><th>Time</th><th>Status</th><th></th></tr></thead><tbody></tbody></table></div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/threats.js"></script>
+</body>
+</html>

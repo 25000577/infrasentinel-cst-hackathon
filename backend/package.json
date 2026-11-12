@@ -1,0 +1,20 @@
+{
+  "name": "infrasentinel-backend",
+  "version": "1.1.0",
+  "private": true,
+  "description": "InfraSentinel — cyber-physical security platform for transformer monitoring",
+  "type": "commonjs",
+  "main": "server.js",
+  "engines": { "node": ">=22.13" },
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.21.2"
+  },
+  "optionalDependencies": {
+    "better-sqlite3": "^12.2.0"
+  }
+}
